@@ -1,4 +1,5 @@
 ﻿using MoonSharp.Interpreter;
+using MoonSharpRepl;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -31,18 +32,22 @@ namespace MoonSharpTest
 
     public class MainViewModel : INotifyPropertyChanged
     {
+        private IAppContainer _appContainer;
+        private readonly IScriptingService _scriptingService;
+
         public MainViewModel()
         {
+            _appContainer = new AppContainer();
+            _scriptingService = _appContainer.ScriptingService;
+            _scriptingService.DebugPrint += _scriptingService_DebugPrint;
             _commandText = string.Empty;
             _outputText = string.Empty;
             _runCommand = new DelegateCommand(OnRunCommand);
-            _script = new Script();
-            _script.Options.DebugPrint = OnLuaDebugPrint;
         }
 
-        private void OnLuaDebugPrint(string s)
+        private void _scriptingService_DebugPrint(object sender, string e)
         {
-            OutputText += $"{s}\n";
+            OutputText += $"{e}\n";
         }
 
         private void OnRunCommand()
@@ -50,16 +55,18 @@ namespace MoonSharpTest
             OutputText += $"> {CommandText}\n";
             try
             {
-                var result = _script.DoString(_commandText);
+                var result = _scriptingService.RunCommand(_commandText);
             }
             catch (SyntaxErrorException ex)
             {
                 OutputText += $"{ex.DecoratedMessage}\n";
             }
+            catch (Exception ex)
+            {
+
+            }
             CommandText = string.Empty;
         }
-
-        private Script _script;
 
         private readonly DelegateCommand _runCommand;
         public  DelegateCommand RunCommand { get { return _runCommand; } }
